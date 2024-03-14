@@ -18,15 +18,18 @@ def on_press(key):
 		buffer += " "
 	keystroke_count += 1
 
+def info():
+    return """\n\
+Text length : {0}\n\
+No of keystrokes : {1}\n\
+No of lines : {2}""".format(len(buffer), keystroke_count,line_count + 1)
+
 def write_log():
 	script_directory = os.path.dirname(os.path.abspath(__file__))
 	log_file_path = os.path.join(script_directory, "log.txt")
 	with open(log_file_path,"w") as out:
 		out.write(buffer)
-		out.write("""\n\
-Text length : {0}\n\
-No of keystrokes : {1}\n\
-No of lines : {2}""".format(len(buffer), keystroke_count,line_count + 1))
+		out.write(info())
 
 def on_release(key):
 	# break loop on pressing esc

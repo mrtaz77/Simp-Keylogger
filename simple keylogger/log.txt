@@ -1,0 +1,36 @@
+Testing key logger
+to check 
+=======================
+Text length : 28
+No of keystrokes : 31
+No of lines : 2
+=======================
+whether it 
+is working 
+properl
+=======================
+Text length : 31
+No of keystrokes : 31
+No of lines : 3
+=======================
+y or not
+but it may be troubles
+=======================
+Text length : 31
+No of keystrokes : 31
+No of lines : 2
+=======================
+ome
+
+so better use it judicious
+=======================
+Text length : 31
+No of keystrokes : 31
+No of lines : 3
+=======================
+ly`
+=======================
+Text length : 3
+No of keystrokes : 4
+No of lines : 1
+=======================

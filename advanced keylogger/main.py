@@ -19,7 +19,6 @@ import sounddevice as sd
 
 from cryptography.fernet import Fernet
 
-from multiprocessing import Process, freeze_support
 from PIL import ImageGrab
 
 from dotenv import load_dotenv

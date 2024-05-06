@@ -1,4 +1,4 @@
-Pillow==9.5.0
+Pillow==10.3.0
 pynput==1.7.6
 pywin32==306
 sounddevice==0.4.6
